@@ -45,4 +45,12 @@ nodemon index.js or
 node index.js
 ```
 
-
+## Dependencies (Versions)
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.0.1",
+    "ws": "^8.14.2"
