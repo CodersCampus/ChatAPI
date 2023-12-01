@@ -11,7 +11,9 @@ const cryptedSecret = bcrypt.genSaltSync(15);
 //
 require("dotenv").config();
 
+const mongoUrl = process.env.MONGO_URL;
 const jwtSecret = process.env.JWT_SECRET;
+const clientUrl = process.env.FRONT_END_URL;
 // Start express server
 const app = express();
 
@@ -19,11 +21,15 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: clientUrl,
     credentials: true,
     methods: ["GET", "POST"],
   })
 );
+
+// Connect to MongoDB
+mongoose.connect(mongoUrl);
+
 app.use("/test", (req, res) => {
   res.send("Hello World, hi!");
 });
