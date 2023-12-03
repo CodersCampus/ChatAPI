@@ -1,4 +1,6 @@
-# ClientWiseAPI
+# CodersCampus Chat API
+
+This is a back end for [CodersCampus Chat App](https://github.com/CodersCampus/ChatApp)
 
 ## Overview
 
