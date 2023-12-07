@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const ws = require("ws");
 const bcrypt = require("bcryptjs");
+const UserModel = require("./models/User");
 const cryptedSecret = bcrypt.genSaltSync(15);
 
 //
@@ -22,7 +23,7 @@ app.use(cookieParser());
 app.use(
   cors({
     origin: clientUrl,
-    credentials: "true",
+    credentials: true,
     methods: ["GET", "POST"],
   })
 );
@@ -51,14 +52,14 @@ app.get("/account", (req, res) => {
 app.post("/register", async (req, res) => {
   const { username, password } = req.body;
   try {
-    const foundUser = await userModel.findOne({ username });
+    const foundUser = await UserModel.findOne({ username });
 
     if (foundUser) {
       console.log("This user already exists");
       res.json({ isUserExist: true });
       return;
     } else {
-      const createdUser = await userModel.create({
+      const createdUser = await UserModel.create({
         username,
         password: bcrypt.hashSync(password, cryptedSecret), // hash passwords before creating users
       });
