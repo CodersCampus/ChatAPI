@@ -32,7 +32,7 @@ app.use(
 mongoose.connect(mongoUrl);
 
 app.use("/test", (req, res) => {
-  res.send("Hello World, hi!");
+  res.send("Todays date is! : " + new Date().toLocaleDateString());
 });
 
 // ACCOUNT
@@ -104,6 +104,12 @@ app.post("/login", async (req, res) => {
       });
     }
   }
+});
+
+app.post("/logout", (req, res) => {
+  res.cookie("token", "", { sameSite: "none", secure: true }).json({
+    message: "Logged out successfully",
+  });
 });
 
 const PORT = process?.env.PORT || 3001;
