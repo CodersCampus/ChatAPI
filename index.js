@@ -24,7 +24,6 @@ app.use(
   cors({
     origin: clientUrl,
     credentials: true,
-    methods: ["GET", "POST"],
   })
 );
 
@@ -115,4 +114,12 @@ app.post("/logout", (req, res) => {
 const PORT = process?.env.PORT || 3001;
 
 // Listen to PORT
-app.listen(PORT);
+const server = app.listen(PORT);
+
+const webSocketServer = new ws.WebSocketServer({ server });
+webSocketServer.on("connection", (connection, req) => {
+  connection.on("message", async (message) => {
+    const incomingMessage = JSON.parse(message.toString());
+    console.log("the server message event is: ", incomingMessage);
+  });
+});
