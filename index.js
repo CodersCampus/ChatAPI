@@ -34,6 +34,15 @@ app.use("/test", (req, res) => {
   res.send("Todays date is! : " + new Date().toLocaleDateString());
 });
 
+app.get("/users", async (req, res) => {
+  const users = await UserModel.find(
+    {},
+    { username: 1, _id: 1, createdAt: 1 }
+  ).sort({ createdAt: -1 });
+  console.log("The users are: ", users);
+  res.json(users);
+});
+
 // ACCOUNT
 app.get("/account", (req, res) => {
   const token = req.cookies?.token;
