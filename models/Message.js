@@ -6,9 +6,6 @@ const MessageSchema = new mongoose.Schema(
     recipient: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     message: String,
     creationTime: Date,
-    file: String,
-    fileName: String,
-    mimeType: String,
   },
   { timestamps: true }
 );
