@@ -8,6 +8,7 @@ const ws = require("ws");
 const bcrypt = require("bcryptjs");
 const UserModel = require("./models/User");
 const cryptedSecret = bcrypt.genSaltSync(15);
+const MessageModel = require("./models/Message");
 
 //
 require("dotenv").config();
@@ -39,7 +40,7 @@ app.get("/users", async (req, res) => {
     {},
     { username: 1, _id: 1, createdAt: 1 }
   ).sort({ createdAt: -1 });
-  console.log("The users are: ", users);
+  // console.log("The users are: ", users);
   res.json(users);
 });
 
@@ -63,7 +64,7 @@ app.post("/register", async (req, res) => {
     const foundUser = await UserModel.findOne({ username });
 
     if (foundUser) {
-      console.log("This user already exists");
+      // console.log("This user already exists");
       res.json({ isUserExist: true });
       return;
     } else {
@@ -120,6 +121,23 @@ app.post("/logout", (req, res) => {
   });
 });
 
+app.get("/messages/:userId", async (req, res) => {
+  try {
+    console.log("w are in /messages/:userId");
+    const { userId } = req.params;
+    MessageModel.findOne({
+      $or: [{ sender: userId }, { recipient: userId }],
+    })
+      .sort({ creationTime: -1 })
+      .then((messages) => {
+        res.json(messages);
+      });
+  } catch (error) {
+    console.log("error is: ", error);
+    res.status(404).send("This is a 404 error from /messages/userId!!");
+  }
+});
+
 const PORT = process?.env.PORT || 3001;
 
 // Listen to PORT
@@ -129,6 +147,16 @@ const webSocketServer = new ws.WebSocketServer({ server });
 webSocketServer.on("connection", (connection, req) => {
   connection.on("message", async (message) => {
     const incomingMessage = JSON.parse(message.toString());
+    if (incomingMessage.chatMessage) {
+      const { senderId, receiverId, chatMessage, creationTime } =
+        incomingMessage;
+      await MessageModel.create({
+        sender: senderId,
+        recipient: receiverId,
+        message: chatMessage,
+        creationTime: creationTime,
+      });
+    }
     console.log("the server message event is: ", incomingMessage);
   });
 });
