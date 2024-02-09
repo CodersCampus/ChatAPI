@@ -120,13 +120,25 @@ app.post("/logout", (req, res) => {
     message: "Logged out successfully",
   });
 });
-
+async function getUserInfo(request) {
+  return new Promise((res, rej) => {
+    const token = request.cookies?.token;
+    if(token){
+      jwt.verify(token, jwtSecret, {}, (error, userInfo) => {
+        if(error) throw error;
+       return res(userInfo);        
+      }) 
+    } else {rej("No Token Found")};
+  });
+}
 app.get("/messages/:userId", async (req, res) => {
   try {
     console.log("w are in /messages/:userId");
     const { userId } = req.params;
-    MessageModel.findOne({
-      $or: [{ sender: userId }, { recipient: userId }],
+ const userInformation = await getUserInfo(req)
+    MessageModel.find({
+      sender:{$in:[userId, userInformation.userId]}, 
+      recipient: {$in:[userId, userInformation.userId]}
     })
       .sort({ creationTime: -1 })
       .then((messages) => {
