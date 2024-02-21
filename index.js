@@ -9,7 +9,6 @@ const bcrypt = require("bcryptjs");
 const UserModel = require("./models/User");
 const MessageModel = require("./models/Message");
 const cryptedSecret = bcrypt.genSaltSync(15);
-const MessageModel = require("./models/Message");
 
 //
 require("dotenv").config();
@@ -158,6 +157,9 @@ const PORT = process?.env.PORT || 3001;
 // Listen to PORT
 const server = app.listen(PORT);
 
+// Clients
+
+const clients = [];
 const webSocketServer = new ws.WebSocketServer({ server });
 webSocketServer.on("connection", (connection, req) => {
   const cookies = req.headers.cookie;
@@ -174,28 +176,50 @@ webSocketServer.on("connection", (connection, req) => {
       connection.username = username;
     });
   }
+  clients.push(connection);
 
   connection.on("message", async (message) => {
     const incomingMessage = JSON.parse(message.toString());
-    if (incomingMessage.chatMessage) {
-      const { senderId, receiverId, chatMessage, creationTime } =
-        incomingMessage;
+    if (incomingMessage.message) {
+      const { sender, recipient, message, createdAt } = incomingMessage;
       await MessageModel.create({
-        sender: senderId,
-        recipient: receiverId,
-        message: chatMessage,
-        creationTime: creationTime,
+        sender: sender,
+        recipient: recipient,
+        message: message,
+        creationTime: createdAt,
+      });
+      // console.log(sender);
+      clients.forEach((c) => {
+        if (c.userId === recipient) {
+          c.send(JSON.stringify(incomingMessage));
+          console.log(c.username);
+        }
+        // console.log(sender);
       });
     }
-    console.log("the server message event is: ", incomingMessage);
-
     if (incomingMessage?.recipient && incomingMessage?.message) {
       const messageDoc = await MessageModel.create({
         sender: connection.userId,
         recipient: incomingMessage.recipient.toString(),
-        message: incomingMessage.chatMessage,
+        message: incomingMessage.message,
         createdAt: incomingMessage.date,
       });
+      // clients.forEach((client) => {
+      //   if (
+      //     client.userId !== connection.userId &&
+      //     client.readyState === ws.WebSocket.OPEN
+      //   ) {
+      //     if (client.userId === incomingMessage.recipient.toString())
+      //       // console.log("the server message event is: ", incomingMessage);
+      //       client.send(JSON.stringify(messageDoc));
+      //   }
+      // });
     }
+    // connection.on("close", function close() {
+    //   console.log("Client disconnected");
+
+    //   // Remove disconnected client from the array
+    //   clients.splice(clients.indexOf(connection), 1);
+    // });
   });
 });
