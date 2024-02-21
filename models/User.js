@@ -5,6 +5,7 @@ const UserSchema = new mongoose.Schema(
   {
     username: { type: String, unique: true },
     password: String,
+    isOnline: Boolean,
   },
   { timestamps: true }
 );

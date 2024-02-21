@@ -7,6 +7,7 @@ const cookieParser = require("cookie-parser");
 const ws = require("ws");
 const bcrypt = require("bcryptjs");
 const UserModel = require("./models/User");
+const MessageModel = require("./models/Message");
 const cryptedSecret = bcrypt.genSaltSync(15);
 const MessageModel = require("./models/Message");
 
@@ -38,7 +39,7 @@ app.use("/test", (req, res) => {
 app.get("/users", async (req, res) => {
   const users = await UserModel.find(
     {},
-    { username: 1, _id: 1, createdAt: 1 }
+    { username: 1, _id: 1, createdAt: 1, isOnline: 1 }
   ).sort({ createdAt: -1 });
   // console.log("The users are: ", users);
   res.json(users);
@@ -123,22 +124,24 @@ app.post("/logout", (req, res) => {
 async function getUserInfo(request) {
   return new Promise((res, rej) => {
     const token = request.cookies?.token;
-    if(token){
+    if (token) {
       jwt.verify(token, jwtSecret, {}, (error, userInfo) => {
-        if(error) throw error;
-       return res(userInfo);        
-      }) 
-    } else {rej("No Token Found")};
+        if (error) throw error;
+        return res(userInfo);
+      });
+    } else {
+      rej("No Token Found");
+    }
   });
 }
 app.get("/messages/:userId", async (req, res) => {
   try {
     console.log("w are in /messages/:userId");
     const { userId } = req.params;
- const userInformation = await getUserInfo(req)
+    const userInformation = await getUserInfo(req);
     MessageModel.find({
-      sender:{$in:[userId, userInformation.userId]}, 
-      recipient: {$in:[userId, userInformation.userId]}
+      sender: { $in: [userId, userInformation.userId] },
+      recipient: { $in: [userId, userInformation.userId] },
     })
       .sort({ creationTime: -1 })
       .then((messages) => {
@@ -157,6 +160,21 @@ const server = app.listen(PORT);
 
 const webSocketServer = new ws.WebSocketServer({ server });
 webSocketServer.on("connection", (connection, req) => {
+  const cookies = req.headers.cookie;
+  if (cookies) {
+    const tokenFound = cookies
+      .split(";")
+      .find((str) => str.startsWith("token="));
+    let token = tokenFound && tokenFound.split("=")[1];
+    if (!token) return;
+    jwt.verify(token, jwtSecret, {}, (err, userInfo) => {
+      if (err) throw err;
+      const { userId, username } = userInfo;
+      connection.userId = userId;
+      connection.username = username;
+    });
+  }
+
   connection.on("message", async (message) => {
     const incomingMessage = JSON.parse(message.toString());
     if (incomingMessage.chatMessage) {
@@ -170,5 +188,14 @@ webSocketServer.on("connection", (connection, req) => {
       });
     }
     console.log("the server message event is: ", incomingMessage);
+
+    if (incomingMessage?.recipient && incomingMessage?.message) {
+      const messageDoc = await MessageModel.create({
+        sender: connection.userId,
+        recipient: incomingMessage.recipient.toString(),
+        message: incomingMessage.chatMessage,
+        createdAt: incomingMessage.date,
+      });
+    }
   });
 });
